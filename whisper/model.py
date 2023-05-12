@@ -269,7 +269,7 @@ class Whisper(nn.Module):
 
     @property
     def is_multilingual(self):
-        return self.dims.n_vocab == 51865
+        return self.dims.n_vocab == 51866
 
     def install_kv_cache_hooks(self, cache: Optional[dict] = None):
         """

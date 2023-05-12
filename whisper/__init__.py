@@ -145,8 +145,22 @@ def load_model(
     del checkpoint_file
 
     dims = ModelDimensions(**checkpoint["dims"])
+    dims.n_vocab = 51866
     model = Whisper(dims)
-    model.load_state_dict(checkpoint["model_state_dict"])
+    
+    if checkpoint["dims"]["n_vocab"] == dims.n_vocab:
+        model.load_state_dict(checkpoint["model_state_dict"])
+    elif checkpoint["dims"]["n_vocab"] == 51865:    # add c-s language code
+        embeddings_weight = torch.randn((51866, 1280)).half()
+        ckpt_emb = checkpoint["model_state_dict"]["decoder.token_embedding.weight"]
+        embeddings_weight[:50358] = ckpt_emb[:50358]
+        embeddings_weight[50358] = (ckpt_emb[50259] + ckpt_emb[50260]) / 2  # 50259 is English, 50260 is Chinese, take the average of the two to form Code-Switching
+        embeddings_weight[50359:] = ckpt_emb[50358:]
+
+        checkpoint["model_state_dict"]["decoder.token_embedding.weight"] = embeddings_weight
+
+        model.load_state_dict(checkpoint["model_state_dict"])
+    
 
     if alignment_heads is not None:
         model.set_alignment_heads(alignment_heads)
