@@ -189,9 +189,12 @@ class WriteVTT(SubtitlesWriter):
     extension: str = "vtt"
     always_include_hours: bool = False
     decimal_marker: str = "."
+    first_line_written: bool = False
 
     def write_result(self, result: dict, file: TextIO, options: dict):
-        print("WEBVTT\n", file=file)
+        if not self.first_line_written:
+            print("WEBVTT\n", file=file)
+            self.first_line_written = True
         for start, end, text in self.iterate_result(result, options):
             print(f"{start} --> {end}\n{text}\n", file=file, flush=True)
 
@@ -200,12 +203,15 @@ class WriteSRT(SubtitlesWriter):
     extension: str = "srt"
     always_include_hours: bool = True
     decimal_marker: str = ","
+    current_index: int = 0
 
     def write_result(self, result: dict, file: TextIO, options: dict):
+        base_i = self.current_index
         for i, (start, end, text) in enumerate(
             self.iterate_result(result, options), start=1
         ):
-            print(f"{i}\n{start} --> {end}\n{text}\n", file=file, flush=True)
+            print(f"{base_i + i}\n{start} --> {end}\n{text}\n", file=file, flush=True)
+            self.current_index = base_i + i
 
 
 class WriteTSV(ResultWriter):

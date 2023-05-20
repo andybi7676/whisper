@@ -1,7 +1,7 @@
 import argparse
 import os
 import warnings
-from typing import TYPE_CHECKING, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Optional, Tuple, Union, TextIO, Callable
 
 import numpy as np
 import torch
@@ -37,6 +37,7 @@ def transcribe(
     model: "Whisper",
     audio: Union[str, np.ndarray, torch.Tensor],
     *,
+    update_fn: Optional[Callable] = None,
     verbose: Optional[bool] = None,
     temperature: Union[float, Tuple[float, ...]] = (0.0, 0.2, 0.4, 0.6, 0.8, 1.0),
     compression_ratio_threshold: Optional[float] = 2.4,
@@ -346,6 +347,7 @@ def transcribe(
                     segment["text"] = ""
                     segment["tokens"] = []
                     segment["words"] = []
+            
 
             all_segments.extend(
                 [
@@ -363,6 +365,9 @@ def transcribe(
             pbar.update(min(content_frames, seek) - previous_seek)
             n_prompt += 1
 
+            if update_fn:
+                update_fn(current_segments, round(pbar.n / content_frames * 100))
+
     return dict(
         text=tokenizer.decode(all_tokens[len(initial_prompt_tokens) :]),
         segments=all_segments,
@@ -370,7 +375,7 @@ def transcribe(
     )
 
 
-def cli():
+def cli(args=None, update_fn=None, model=None):
     from . import available_models
 
     # fmt: off
@@ -409,8 +414,11 @@ def cli():
     parser.add_argument("--max_line_count", type=optional_int, default=None, help="(requires --word_timestamps True) the maximum number of lines in a segment")
     parser.add_argument("--threads", type=optional_int, default=0, help="number of threads used by torch for CPU inference; supercedes MKL_NUM_THREADS/OMP_NUM_THREADS")
     # fmt: on
-
-    args = parser.parse_args().__dict__
+    if args == None:
+        args = parser.parse_args().__dict__
+    else:
+        args = parser.parse_args(args).__dict__
+    # print(args)
     model_name: str = args.pop("model")
     model_dir: str = args.pop("model_dir")
     output_dir: str = args.pop("output_dir")
@@ -436,7 +444,8 @@ def cli():
 
     from . import load_model
 
-    model = load_model(model_name, device=device, download_root=model_dir)
+    if model == None:
+        model = load_model(model_name, device=device, download_root=model_dir)
 
     writer = get_writer(output_format, output_dir)
     word_options = ["highlight_words", "max_line_count", "max_line_width"]
@@ -448,8 +457,9 @@ def cli():
         warnings.warn("--max_line_count has no effect without --max_line_width")
     writer_args = {arg: args.pop(arg) for arg in word_options}
     for audio_path in args.pop("audio"):
-        result = transcribe(model, audio_path, temperature=temperature, **args)
-        writer(result, audio_path, writer_args)
+        result = transcribe(model, audio_path, update_fn=update_fn, temperature=temperature, **args)
+        if update_fn is None:
+            writer(result, audio_path, writer_args)
 
 
 if __name__ == "__main__":
