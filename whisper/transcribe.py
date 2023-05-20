@@ -175,7 +175,11 @@ def transcribe(
                 and decode_result.avg_logprob < logprob_threshold
             ):
                 needs_fallback = True  # average log probability is too low
-
+            if (
+                no_speech_threshold is not None
+                and decode_result.no_speech_prob > no_speech_threshold
+            ):
+                needs_fallback = False  # silence
             if not needs_fallback:
                 break
 
@@ -310,11 +314,14 @@ def transcribe(
                 )
                 seek += segment_size
 
+<<<<<<< HEAD
             if not condition_on_previous_text or result.temperature > 0.5 or n_prompt >= 5:
                 # do not feed the prompt tokens if a high temperature was used
                 prompt_reset_since = len(all_tokens)
                 n_prompt = 0    # do not reset prompt might results in repeating output bugs, reset for every five segments
 
+=======
+>>>>>>> upstream/main
             if word_timestamps:
                 add_word_timestamps(
                     segments=current_segments,
@@ -360,6 +367,10 @@ def transcribe(
             all_tokens.extend(
                 [token for segment in current_segments for token in segment["tokens"]]
             )
+
+            if not condition_on_previous_text or result.temperature > 0.5:
+                # do not feed the prompt tokens if a high temperature was used
+                prompt_reset_since = len(all_tokens)
 
             # update progress bar
             pbar.update(min(content_frames, seek) - previous_seek)
