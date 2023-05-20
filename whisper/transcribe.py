@@ -314,14 +314,11 @@ def transcribe(
                 )
                 seek += segment_size
 
-<<<<<<< HEAD
             if not condition_on_previous_text or result.temperature > 0.5 or n_prompt >= 5:
                 # do not feed the prompt tokens if a high temperature was used
                 prompt_reset_since = len(all_tokens)
                 n_prompt = 0    # do not reset prompt might results in repeating output bugs, reset for every five segments
 
-=======
->>>>>>> upstream/main
             if word_timestamps:
                 add_word_timestamps(
                     segments=current_segments,
