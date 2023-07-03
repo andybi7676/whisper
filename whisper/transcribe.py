@@ -396,8 +396,8 @@ def cli(args=None, update_fn=None, model=None):
     parser.add_argument("--output_format", "-f", type=str, default="all", choices=["txt", "vtt", "srt", "tsv", "json", "all"], help="format of the output file; if not specified, all available formats will be produced")
     parser.add_argument("--verbose", type=str2bool, default=True, help="whether to print out the progress and debug messages")
 
-    parser.add_argument("--task", type=str, default="transcribe", choices=["transcribe", "translate"], help="whether to perform X->X speech recognition ('transcribe') or X->English translation ('translate')")
-    parser.add_argument("--language", type=str, default=None, choices=sorted(LANGUAGES.keys()) + sorted([k.title() for k in TO_LANGUAGE_CODE.keys()]), help="language spoken in the audio, specify None to perform language detection")
+    parser.add_argument("--task", type=str, default="transcribe", choices=["transcribe", "translate", "both"], help="whether to perform X->X speech recognition ('transcribe') or X->English translation ('translate')")
+    parser.add_argument("--language", type=str, default="en,zh", help="language spoken in the audio, specify None to perform language detection, and separate by comma if several languages are included")
 
     parser.add_argument("--temperature", type=float, default=0, help="temperature to use for sampling")
     parser.add_argument("--best_of", type=optional_int, default=5, help="number of candidates when sampling with non-zero temperature")
@@ -453,7 +453,9 @@ def cli(args=None, update_fn=None, model=None):
     from . import load_model
 
     if model == None:
-        model = load_model(model_name, device=device, download_root=model_dir)
+        model = load_model(model_name, language=args["language"], device=device, download_root=model_dir)
+        if len(args["language"].split(',')) > 1:
+            args["language"] = "c-s"
 
     writer = get_writer(output_format, output_dir)
     word_options = ["highlight_words", "max_line_count", "max_line_width"]

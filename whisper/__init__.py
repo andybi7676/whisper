@@ -96,6 +96,7 @@ def available_models() -> List[str]:
 
 def load_model(
     name: str,
+    language: str,
     device: Optional[Union[str, torch.device]] = None,
     download_root: str = None,
     in_memory: bool = False,
@@ -147,14 +148,18 @@ def load_model(
     dims = ModelDimensions(**checkpoint["dims"])
     dims.n_vocab = 51866
     model = Whisper(dims)
-    
+    language = language.split(',')
+    from .tokenizer import LANGUAGES
+    langs = tuple(LANGUAGES.keys())
+
     if checkpoint["dims"]["n_vocab"] == dims.n_vocab:
         model.load_state_dict(checkpoint["model_state_dict"])
     elif checkpoint["dims"]["n_vocab"] == 51865:    # add c-s language code
-        embeddings_weight = torch.randn((51866, 1280)).half()
         ckpt_emb = checkpoint["model_state_dict"]["decoder.token_embedding.weight"]
+        embeddings_weight = torch.zeros((51866, 1280)).half().to(ckpt_emb.device)
         embeddings_weight[:50358] = ckpt_emb[:50358]
-        embeddings_weight[50358] = (ckpt_emb[50259] + ckpt_emb[50260]) / 2  # 50259 is English, 50260 is Chinese, take the average of the two to form Code-Switching
+        for l in language:
+            embeddings_weight[50358] += ckpt_emb[50259 + langs.index(l)] / len(language)  # take the average of all languages to form Code-Switching
         embeddings_weight[50359:] = ckpt_emb[50358:]
 
         checkpoint["model_state_dict"]["decoder.token_embedding.weight"] = embeddings_weight
