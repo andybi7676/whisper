@@ -396,7 +396,7 @@ def cli(args=None, update_fn=None, model=None):
     parser.add_argument("--output_format", "-f", type=str, default="all", choices=["txt", "vtt", "srt", "tsv", "json", "all"], help="format of the output file; if not specified, all available formats will be produced")
     parser.add_argument("--verbose", type=str2bool, default=True, help="whether to print out the progress and debug messages")
 
-    parser.add_argument("--task", type=str, default="transcribe", choices=["transcribe", "translate", "both"], help="whether to perform X->X speech recognition ('transcribe') or X->English translation ('translate')")
+    parser.add_argument("--task", type=str, default="transcribe", choices=["transcribe", "translate"], help="whether to perform X->X speech recognition ('transcribe') or X->English translation ('translate')")
     parser.add_argument("--language", type=str, default="en,zh", help="language spoken in the audio, specify None to perform language detection, and separate by comma if several languages are included")
 
     parser.add_argument("--temperature", type=float, default=0, help="temperature to use for sampling")
@@ -407,7 +407,7 @@ def cli(args=None, update_fn=None, model=None):
 
     parser.add_argument("--suppress_tokens", type=str, default="-1", help="comma-separated list of token ids to suppress during sampling; '-1' will suppress most special characters except common punctuations")
     parser.add_argument("--initial_prompt", type=str, default=None, help="optional text to provide as a prompt for the first window.")
-    parser.add_argument("--condition_on_previous_text", type=str2bool, default=True, help="if True, provide the previous output of the model as a prompt for the next window; disabling may make the text inconsistent across windows, but the model becomes less prone to getting stuck in a failure loop")
+    parser.add_argument("--condition_on_previous_text", type=str2bool, default=False, help="if True, provide the previous output of the model as a prompt for the next window; disabling may make the text inconsistent across windows, but the model becomes less prone to getting stuck in a failure loop")
     parser.add_argument("--fp16", type=str2bool, default=True, help="whether to perform inference in fp16; True by default")
 
     parser.add_argument("--temperature_increment_on_fallback", type=optional_float, default=0.2, help="temperature to increase when falling back when the decoding fails to meet either of the thresholds below")
