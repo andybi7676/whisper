@@ -11,9 +11,6 @@ from .audio import CHUNK_LENGTH
 from .tokenizer import Tokenizer, get_tokenizer
 from .utils import compression_ratio
 
-from opencc import OpenCC
-cc = OpenCC('s2tw')
-
 if TYPE_CHECKING:
     from .model import Whisper
 
@@ -772,7 +769,7 @@ class DecodingTask:
                 audio_features=features,
                 language=language,
                 tokens=tokens,
-                text=cc.convert(text),
+                text=text,
                 avg_logprob=avg_logprob,
                 no_speech_prob=no_speech_prob,
                 temperature=self.options.temperature,
