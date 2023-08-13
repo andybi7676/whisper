@@ -29,6 +29,8 @@ from .utils import (
     str2bool,
 )
 
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
+
 if TYPE_CHECKING:
     from .model import Whisper
 
@@ -382,6 +384,25 @@ def transcribe(
         language=language,
     )
 
+def translate(result):
+    translator = pipeline("translation", model="Helsinki-NLP/opus-mt-zh-en")
+    en_result = dict()
+    for k, v in result.items():
+        if k == 'language':
+            en_result[k] = 'en'
+        elif k == 'segments':
+            en_result[k] = []
+            for seg in v:
+                temp = dict()
+                for sub_k, sub_v in seg.items():
+                    if sub_k == 'text':
+                        temp[sub_k] = translator(sub_v)[0]['translation_text']
+                    else:
+                        temp[sub_k] = sub_v
+                en_result[k].append(temp)
+        else:
+            en_result[k] = v
+    return en_result
 
 def cli(args=None, update_fn=None, model=None):
     from . import available_models
@@ -458,6 +479,7 @@ def cli(args=None, update_fn=None, model=None):
             args["language"] = "c-s"
 
     writer = get_writer(output_format, output_dir)
+    en_writer = get_writer(output_format, output_dir, translate=True)
     word_options = ["highlight_words", "max_line_count", "max_line_width"]
     if not args["word_timestamps"]:
         for option in word_options:
@@ -468,8 +490,10 @@ def cli(args=None, update_fn=None, model=None):
     writer_args = {arg: args.pop(arg) for arg in word_options}
     for audio_path in args.pop("audio"):
         result = transcribe(model, audio_path, update_fn=update_fn, temperature=temperature, **args)
+        en_result = translate(result)
         if update_fn is None:
             writer(result, audio_path, writer_args)
+            en_writer(en_result, audio_path, writer_args)
 
 
 if __name__ == "__main__":
