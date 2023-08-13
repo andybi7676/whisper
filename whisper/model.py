@@ -255,6 +255,17 @@ class Whisper(nn.Module):
     def embed_audio(self, mel: torch.Tensor):
         return self.encoder(mel)
 
+    @torch.no_grad()
+    def update_cs_embbedding(self, cs_langs: str):
+        from .tokenizer import LANGUAGES
+        langs = tuple(LANGUAGES.keys())
+        cs_langs = cs_langs.split(',')
+        old_embeddings = self.decoder.token_embedding.weight
+        new_embedding = torch.zeros((1280)).half().to(self.device)
+        for l in cs_langs:
+            new_embedding += old_embeddings[50259 + langs.index(l)] / len(cs_langs)
+        self.decoder.token_embedding.weight[50358] = new_embedding
+
     def logits(self, tokens: torch.Tensor, audio_features: torch.Tensor):
         return self.decoder(tokens, audio_features)
 
